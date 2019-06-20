@@ -1,0 +1,125 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+  labels:
+    app: everything-staging
+  name: everything-staging
+  namespace: everything-staging
+spec:
+  strategy:
+    dockerStrategy:
+      from:
+        kind: DockerImage
+        name: '172.30.124.220:5000/openshift/dotnetsdk:latest'
+    type: Docker
+  output:
+    to:
+      kind: ImageStreamTag
+      name: 'everything-staging:latest'
+  resources: {}
+  runPolicy: Serial
+  source:
+    git: 
+      uri: https://github.com/jfsvak/everything.git
+      ref: master
+  postCommit: {}
+  successfulBuildsHistoryLimit: 3
+  failedBuildsHistoryLimit: 3
+
+---
+
+apiVersion: v1
+kind: DeploymentConfig
+metadata:
+  labels:
+    app: everything-dev
+  name: everything-dev
+  namespace: everything-dev
+spec:
+  replicas: 1
+  selector:
+    app: everything-dev
+    deploymentconfig: everything-dev
+  strategy:
+    activeDeadlineSeconds: 21600
+    resources: {}
+    rollingParams:
+      intervalSeconds: 1
+      maxSurge: 25%
+      maxUnavailable: 25%
+      timeoutSeconds: 600
+      updatePeriodSeconds: 1
+    type: Rolling
+  template:
+    metadata:
+      labels:
+        app: everything-dev
+        deploymentconfig: everything-dev
+    spec:
+      containers:
+        - env:
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Openshift
+            - name: EVErything_App_Connection
+              value: server=mysql-57-centos7.everything-dev.svc;user=everything_app;password=password;database=everything_app
+            - name: EVErything_Identity_Connection
+              value: server=mysql-57-centos7.everything-dev.svc;user=everything_identity;password=password;database=everything_identity
+            - name: EVE_CLIENT_ID
+              value: d5e93faa39cf4db781cfd3b425d4993c
+            - name: EVE_SECRET_KEY
+              value: lNUDDifxO5E0HSDXTVgP1rPNe1MrKJ4gQe0Q9rU7
+            - name: ESI_CALLBACK_URL
+              value: http://everything-dev.192.168.99.100.nip.io/esicallback
+          image: 172.30.1.1:5000/everything-dev/everything-dev
+          imagePullPolicy: Always
+          name: everything-dev
+          resources: {}
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+  triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - everything-dev
+        from:
+          kind: ImageStreamTag
+          name: 'everything-dev:latest'
+          namespace: everything-dev
+  revisionHistoryLimit: 3
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: everything-dev
+  name: everything-dev
+  namespace: everything-dev
+spec:
+  selector:
+    app: everything-dev
+  ports:
+  - name: http-80
+    port: 80
+    protocol: TCP
+    targetPort: 5000
+  type: ClusterIP
+  
+---
+
+apiVersion: v1
+kind: Route
+metadata:
+  labels:
+    app: everything-dev
+  name: everything-dev
+  namespace: everything-dev
+spec:
+  host: everything-dev.192.168.99.100.nip.io
+  to:
+    kind: Service
+    name: everything-dev
+    weight: 100

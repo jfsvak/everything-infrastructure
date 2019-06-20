@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ImageStream
+metadata:
+  name: dotnetcoresdk
+spec:
+  dockerImageRepository: mcr.microsoft.com/dotnet/core/sdk
+
