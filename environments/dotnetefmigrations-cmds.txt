@@ -1,0 +1,63 @@
+create user everything_app identified by 'password';
+create user everything_identity identified by 'password';
+
+-- (Re)create everything_IDENTITY
+create database everything_identity;
+grant all on everything_identity.* to everything_identity@'%';
+use everything_identity;
+CREATE TABLE `__EFMigrationsHistory` ( `MigrationId` nvarchar(150) NOT NULL, `ProductVersion` nvarchar(32) NOT NULL, PRIMARY KEY (`MigrationId`) );
+-- (Re)create everything_APP
+create database everything_app;
+use everything_app;
+CREATE TABLE `__EFMigrationsHistory` ( `MigrationId` nvarchar(150) NOT NULL, `ProductVersion` nvarchar(32) NOT NULL, PRIMARY KEY (`MigrationId`) );
+grant all on everything_app.* to everything_app@'%';
+
+
+drop database everything_app;
+drop database everything_identity;
+drop user everything_app;
+drop user everything_identity;
+
+--Pinging mysql server
+curl -sL -I 172.30.116.163:3306/ping
+curl -sL -I 172.17.0.11:3306/ping
+
+-- Runnig a script in container
+-- Upload file first
+oc cp setup-db-everything.sql mysql-57-centos7-20-7p6zq:/tmp
+oc exec mysql-57-centos7-20-7p6zq -- /bin/sh -c "/opt/rh/rh-mysql57/root/usr/bin/mysql -u root -e 'source /tmp/setup-everything-db.sql'"
+
+[MYSQL Shell]
+oc port-forward <podname> 13306:3306
+\connect --mysql everything_app:password@127.0.0.1:13306
+\sql
+use everything_app
+show tables;
+
+set GLOBAL general_log = 'ON';
+set GLOBAL slow_query_log='ON';
+
+
+
+
+
+[Powershell]
+get-childitem Env:
+$Env:EVErything_App_Connection='server=127.0.0.1;port=13306;database=everything_app;user=everything_app;password=password'
+$Env:EVErything_Identity_Connection='server=127.0.0.1;port=13306;database=everything_identity;user=everything_identity;password=password'
+
+-- Migrate everything_APP
+dotnet ef migrations add InitialCreate --startup-project EVErything.Web --project EVErything.Business --context AppDbContext
+dotnet ef database update --startup-project EVErything.Web --project EVErything.Business --context AppDbContext
+dotnet ef migrations remove --startup-project EVErything.Web --project EVErything.Business --context AppDbContext
+
+
+-- Migrate everything_IDENTITY
+dotnet ef migrations add InitialCreate --startup-project EVErything.Web --project EVErything.Web --context IdentityDbContext
+dotnet ef database update --startup-project EVErything.Web --project EVErything.Web --context IdentityDbContext
+dotnet ef migrations remove --startup-project EVErything.Web --project EVErything.Web --context IdentityDbContext
+
+
+
+### Running a simple image in the cluster
+oc run -i -t ultimate-devbox --rm --image=172.30.1.1:5000/everything-dev/ultimate-devbox --restart=Never -- bash

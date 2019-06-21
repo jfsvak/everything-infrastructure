@@ -2,15 +2,16 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: mysql-data-claim
+  namespace: everything-staging
+  labels:
+    app: mysql-57-centos7
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
- storageClassName: local-storage
- selector:
-   name: mysql-data
+      storage: "1Gi"
+ #storageClassName: local-storage
 
 ---
 
@@ -20,8 +21,9 @@ metadata:
   labels:
     app: mysql-57-centos7
   name: mysql-57-centos7
-  namespace: everything-dev
+  namespace: everything-staging
 spec:
+  replicas: 1
   selector:
     app: mysql-57-centos7
     deploymentconfig: mysql-57-centos7
@@ -35,8 +37,7 @@ spec:
     spec:
       containers:
         - name: mysql-57-centos7
-          image: >-
-            centos/mysql-57-centos7@sha256:8d750876687d9fb0adf46020e38cd43165b906208d2e81088b3a13213e751df3
+          image: centos/mysql-57-centos7
           imagePullPolicy: Always
           ports:
             - containerPort: 3306
@@ -61,9 +62,7 @@ spec:
         from:
           kind: ImageStreamTag
           name: 'mysql-57-centos7:latest'
-          namespace: everything-dev
-        lastTriggeredImage: >-
-          centos/mysql-57-centos7@sha256:8d750876687d9fb0adf46020e38cd43165b906208d2e81088b3a13213e751df3
+          namespace: general-stuff
       type: ImageChange
 
 ---
@@ -74,7 +73,7 @@ metadata:
   labels:
     app: mysql-57-centos7
   name: mysql-57-centos7
-  namespace: everything-dev
+  namespace: everything-staging
 spec:
   ports:
     - name: tcp-3306
@@ -85,11 +84,4 @@ spec:
     app: mysql-57-centos7
     deploymentconfig: mysql-57-centos7
   type: ClusterIP
-  
-  
-  
-  
-  
-  
-  
   

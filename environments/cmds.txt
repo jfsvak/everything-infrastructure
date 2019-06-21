@@ -1,0 +1,58 @@
+## Getting the dotnet core image into local openshift registry
+docker pull mcr.microsoft.com/dotnet/core/sdk
+docker tag mcr.microsoft.com/dotnet/core/sdk 172.30.124.220:5000/openshift/dotnetsdk
+docker push 172.30.124.220:5000/openshift/dotnetsdk
+
+Switch to openshift registry:
+ > & minishift docker-env | Invoke-Expression
+Log into repo with user
+ > docker login -u developer -p $(oc whoami -t) $(minishift openshift registry)
+ 
+-------
+1) create BuildConfig + Image Stream: everything-dev
+ > Dockerfile: oc new-build --strategy docker --binary --docker-image "172.30.124.220:5000/openshift/dotnetsdk" --name everything-dev -n everything-dev -l app=everything-dev
+ > stdin: cat Dockerfile-everything-openshift | oc new-build -D - --strategy docker --binary --docker-image "172.30.124.220:5000/openshift/dotnetsdk" --name everything-dev -n everything-dev -l app=everything-dev
+ 
+2) trigger build with input from local: takes the input and runs dockerfile on top of openshift/dotnetsdk
+ > oc start-build everything-dev -n everything-dev --from-dir . --follow
+ > oc start-build everything-dev -n everything-dev --from-archive=everything.tar --follow
+ 
+3) create new that implicitly uses that image stream with the same name (creates DeploymentConfig+Service+Pods)
+ > oc new-app everything-dev -n everything-dev --env-file everything-dev.env
+
+4) Expose the src route
+ > oc expose dc everything-dev --port=5000
+
+4) Go change code, build and publish to publish
+ > dotnet publish -c Debug -f netcoreapp2.2 -o publish efmysqltest.csproj
+ 
+5) ...trigger build as in step 2 again
+
+-----------------------
+BuildConfig for ef migration
+ > cat Dockerfile-ef-migration | oc new-build --strategy docker --binary --docker-image "172.30.124.220:5000/openshift/dotnetsdk" --name everything-ef-migration-dev -n everything-dev -l app=everything-dev
+ > oc start-build everything-ef-migration-dev -n everything-dev --from-archive=everything.tar --docker-image=mcr.microsoft.com/dotnet/core/sdk --docker-file=Dockerfile-ef-migration --follow
+ 
+ 
+--oc set env dc/everything-dev -e everything-dev.env
+
+oc delete all -l app=everything-dev
+oc expose dc everything-dev --port=5000
+minishift openshift service everything-dev
+
+
+### Simple builds
+oc new-build --name simplebox --strategy=docker --binary=true
+oc start-build simplebox --from-dir=simplebox
+
+### Run to completion
+oc run simplebox --image=172.30.1.1:5000/everything-dev/simplebox --restart=Never
+
+### Run interactive and remove afterwards
+oc run simplebox -i -t --image=172.30.1.1:5000/everything-dev/simplebox --rm --restart=Never
+
+dotnetsdk
+oc login --token=eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJldmVyeXRoaW5nLWRldiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJkb3RuZXRzZGstdG9rZW4tenBtZ3IiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZG90bmV0c2RrIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiNzIwMjJkYTgtOGZlZS0xMWU5LWE2Y2QtMDgwMDI3MzVjZDQ5Iiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmV2ZXJ5dGhpbmctZGV2OmRvdG5ldHNkayJ9.Z5nW53v5qZL8k9J3y-8G6TSu3AJXLM2BOWr4wo-KQkBdufdGgfJvN9X5qQOfkdS9u8ntr0Pj0FAeEYkkjw4Z3VZqNU0BH7qsQdhvWN4GaYT_-gHWPqUPeu9xUdlUEnZ76op79uSlu8Phqg83Y9WMI-DXTCfxf2N47FJijumrF9s_eAgM2bxEFLCehVcyWqTeG2rzU7ONXgAH_Gsx7U_xpvvOolYEgS2Fp8kcjW2KkvkYVHoCwgFDbgkUO8O7M4hgIhGRqw9lB9LIb6vGQks3scDeCA54l0msoIBkVOqgrkk2m99vyS7yVs9Etg8bvjHBY02IQrKJrjpTt4R7Ug6DYA
+
+deployer
+oc login --token=eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJldmVyeXRoaW5nLWRldiIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJkZXBsb3llci10b2tlbi10N2o5dCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJkZXBsb3llciIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6IjE2NzVlZWM3LTg5MDAtMTFlOS04ZTcwLTA4MDAyNzM1Y2Q0OSIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpldmVyeXRoaW5nLWRldjpkZXBsb3llciJ9.xT3Zvdcl11v-YYwURkTnsc1hJaXGQ__d5aMFnfzIPPvibXJWQKzFc1b6iv85NiGbfFbIQO3o9Zk3MqMspvYs7DZymYxjuUJe7fKQSB9SpjDCL5XJEZW2MVPuhJ71OQU3F3C-KIBcAgXyqlLtj4H_HZBOK08Jhst362ond0svHDhC5QtSOiz_3gi7qaI5W2ozKb60LGhgch2bOeUNE3xk72I7EBp-S004wWPQihrLdrj9-J9QDz-SNVEpqbFhnbIalYDAhwz4ma0gXc2wNBrrptRdS56mhfmUricRY1m09Pb944afnqeMATlmtp-ZCvfUL9xLIzDY73mT6P9SDlvOTw

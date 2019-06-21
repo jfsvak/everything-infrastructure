@@ -1,0 +1,50 @@
+[user]
+	name = Jesper Svak
+	email = jfsvak@gmail.com
+	
+[filter "lfs"]
+	clean = git lfs clean %f
+	smudge = git lfs smudge %f
+	required = true
+	
+[credential]
+	helper = wincred
+	
+[core]
+	autocrlf = true
+	
+[winUpdater]
+	recentlySeenVersion = 2.18.0.windows.1
+
+[alias]
+    #
+	st = status
+	co = commit
+	rl = reflog -n20
+	d = diff
+	dt = difftool
+    l = log -20
+	lme = log -20 --author=jfsvak
+	#ll = log --pretty=format:'%C(yellow)%h%Cred %Creset%s%Cgreen [by %cn %cD]'
+	ll = log --pretty=format:'%C(yellow)%h%Cred %<(15)%C(dim green)%an %>(32)%cD  %C(auto)%d%Creset%s'
+	llme = log --pretty=format:'%C(yellow)%h%Cred %C(auto)%d%Creset%s%Cgreen [by %cn %cD]' --author=jfsvak
+	la = log -20 --all 
+    lg = log -20 --graph
+    lag = log -20 --all --graph
+    lga = log -20 --all --graph
+	lf = log --pretty=format:'%C(yellow)%h%Cred%d %Creset%s%Cgreen [by %cn %cD]' --decorate --numstat 
+	lfme = log --pretty=format:'%C(yellow)%h%Cred%d %Creset%s%Cgreen [by %cn %cD]' --decorate --numstat --author=jfsvak
+	ec = config --global -e
+ 
+[pull]
+	rebase = true
+	
+[log]
+	date = relative
+	
+[format]
+  ##pretty=format:%C(yellow)%h  %<(15)%C(dim green)%an %>(15)%cr %C(auto)%d %C(auto)%s %C(bold white)%Creset
+  pretty=format:%C(yellow)%h %C(auto)%d %C(auto)%s %C(dim green bold)[by %cn %cr]%Creset
+ 	
+[push]
+	default = current
