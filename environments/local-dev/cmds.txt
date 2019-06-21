@@ -1,0 +1,1 @@
+docker run -d -e MYSQL_ROOT_PASSWORD=unico88 -p 33306:3306 centos/mysql-57-centos7
