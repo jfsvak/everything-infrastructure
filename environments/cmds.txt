@@ -1,12 +1,13 @@
+Switch to openshift registry:
+ > & minishift docker-env | Invoke-Expression
+Log into repo with user
+ > docker login -u developer -p $(oc whoami -t) $(minishift openshift registry)
+
 ## Getting the dotnet core image into local openshift registry
 docker pull mcr.microsoft.com/dotnet/core/sdk
 docker tag mcr.microsoft.com/dotnet/core/sdk 172.30.124.220:5000/openshift/dotnetsdk
 docker push 172.30.124.220:5000/openshift/dotnetsdk
 
-Switch to openshift registry:
- > & minishift docker-env | Invoke-Expression
-Log into repo with user
- > docker login -u developer -p $(oc whoami -t) $(minishift openshift registry)
  
 -------
 1) create BuildConfig + Image Stream: everything-dev

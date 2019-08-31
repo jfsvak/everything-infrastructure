@@ -1,1 +1,7 @@
-docker run -d -e MYSQL_ROOT_PASSWORD=unico88 -p 33306:3306 centos/mysql-57-centos7
+docker run --name mysql-localdev -d -e MYSQL_ROOT_PASSWORD=unico88 -p 33306:3306 centos/mysql-57-centos7
+
+docker start mysql-localdev
+
+mysql -u root -p -h 192.168.99.100 -P 33306
+
+

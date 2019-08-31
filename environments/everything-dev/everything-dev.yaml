@@ -8,23 +8,6 @@ metadata:
 spec:
   lookupPolicy:
     local: false
-status:
-  dockerImageRepository: '172.30.1.1:5000/everything-dev/everything-dev'
-  tags:
-    - items:
-        - created: '2019-06-08T09:22:54Z'
-          dockerImageReference: >-
-            172.30.1.1:5000/everything-dev/everything-dev@sha256:636832482d95b93b0d1061792979e65b36f6367fba5d42bfc91e2f25b22bbc8c
-          generation: 1
-          image: >-
-            sha256:636832482d95b93b0d1061792979e65b36f6367fba5d42bfc91e2f25b22bbc8c
-        - created: '2019-06-08T08:54:08Z'
-          dockerImageReference: >-
-            172.30.1.1:5000/everything-dev/everything-dev@sha256:886d23162301809cc79eb17fee9e064d7b3a7c890dbb05bb6823a4d5fbce1d27
-          generation: 1
-          image: >-
-            sha256:886d23162301809cc79eb17fee9e064d7b3a7c890dbb05bb6823a4d5fbce1d27
-      tag: latest
 
 ---
 
